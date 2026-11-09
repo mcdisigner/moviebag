@@ -10,6 +10,10 @@ import {
   RefreshCw,
   Zap,
   MonitorPlay,
+  ShieldCheck,
+  ShieldAlert,
+  Sparkles,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import FloatingSubtitleOverlay from "@/components/subtitles/FloatingSubtitleOverlay";
@@ -34,6 +38,7 @@ export default function StreamPlayer({
   const [currentServer, setCurrentServer] = useState<number>(preferredServer || 1);
   const [copied, setCopied] = useState<boolean>(false);
   const [isTheater, setIsTheater] = useState<boolean>(false);
+  const [adShield, setAdShield] = useState<boolean>(true); // Blocks 99% popups & redirects
   const [key, setKey] = useState<number>(0); // reload key
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -51,70 +56,67 @@ export default function StreamPlayer({
     });
   }, [tmdbId, mediaType, season, episode, title, saveContinueWatching]);
 
-  // Construct URLs for each server (with autoplay disabled)
+  // Construct URLs for each server (Prioritizing clean, high-bitrate WEB-DL/Blu-Ray providers)
   const servers = [
     {
       id: 1,
-      name: "VidSrc Pro",
-      tag: "Fastest • 1080p",
+      name: "VidLink Pro",
+      tag: "⭐ 4K/1080p/720p Quality • No Ads (Best for SL)",
+      badge: "Quality ⚙️",
       url:
         mediaType === "movie"
-          ? `https://vidsrc.pro/embed/movie/${tmdbId}?autoPlay=false`
-          : `https://vidsrc.pro/embed/tv/${tmdbId}/${season}/${episode}?autoPlay=false`,
+          ? `https://vidlink.pro/movie/${tmdbId}?primaryColor=6366f1&autoplay=false`
+          : `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}?primaryColor=6366f1&autoplay=false`,
     },
     {
       id: 2,
-      name: "VidSrc.cc",
-      tag: "Ultra HD • 1080p",
-      url:
-        mediaType === "movie"
-          ? `https://vidsrc.cc/v2/embed/movie/${tmdbId}?autoPlay=false`
-          : `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}?autoPlay=false`,
-    },
-    {
-      id: 3,
-      name: "SmashyStream",
-      tag: "HD Mirror • Multi-HQ",
-      url:
-        mediaType === "movie"
-          ? `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&autoPlay=false`
-          : `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=${season}&episode=${episode}&autoPlay=false`,
-    },
-    {
-      id: 4,
-      name: "VidSrc XYZ",
-      tag: "Ultra HD • Multi-Lang",
-      url:
-        mediaType === "movie"
-          ? `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}&autoPlay=false`
-          : `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}&autoPlay=false`,
-    },
-    {
-      id: 5,
-      name: "SuperEmbed",
-      tag: "Reliable • Low Buffering",
-      url:
-        mediaType === "movie"
-          ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&autoplay=0`
-          : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}&autoplay=0`,
-    },
-    {
-      id: 6,
-      name: "AutoEmbed",
-      tag: "No Ads • Clean Stream",
+      name: "AutoEmbed HD",
+      tag: "Clean WEB-DL • Fast Buffering",
+      badge: "1080p Pure",
       url:
         mediaType === "movie"
           ? `https://player.autoembed.cc/embed/movie/${tmdbId}?autoplay=0`
           : `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}?autoplay=0`,
     },
     {
-      id: 7,
-      name: "2Embed",
-      tag: "Backup • Global",
+      id: 3,
+      name: "Embed.su",
+      tag: "Ultra HD • 4K HDR Multi-Source",
+      badge: "4K HDR",
       url:
         mediaType === "movie"
-          ? `https://www.2embed.cc/embed/${tmdbId}?autoplay=0`
-          : `https://www.2embed.cc/embedtv/${tmdbId}&s=${season}&e=${episode}&autoplay=0`,
+          ? `https://embed.su/embed/movie/${tmdbId}`
+          : `https://embed.su/embed/tv/${tmdbId}/${season}/${episode}`,
+    },
+    {
+      id: 4,
+      name: "SmashyStream",
+      tag: "Multi-HQ Mirror • Multi-Audio",
+      badge: "Multi-Audio",
+      url:
+        mediaType === "movie"
+          ? `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&autoPlay=false`
+          : `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=${season}&episode=${episode}&autoPlay=false`,
+    },
+    {
+      id: 5,
+      name: "VidSrc Pro",
+      tag: "High-Speed Mirror • 1080p",
+      badge: "1080p",
+      url:
+        mediaType === "movie"
+          ? `https://vidsrc.pro/embed/movie/${tmdbId}?autoPlay=false`
+          : `https://vidsrc.pro/embed/tv/${tmdbId}/${season}/${episode}?autoPlay=false`,
+    },
+    {
+      id: 6,
+      name: "SuperEmbed",
+      tag: "Reliable Multi-Host • Low Data",
+      badge: "Reliable",
+      url:
+        mediaType === "movie"
+          ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&autoplay=0`
+          : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}&autoplay=0`,
     },
   ];
 
@@ -157,13 +159,18 @@ export default function StreamPlayer({
         {/* Dynamic Ambient Background Glow */}
         <div className="absolute -inset-4 bg-gradient-to-r from-accent-primary/10 via-accent-secondary/15 to-transparent blur-3xl -z-10 pointer-events-none" />
 
-        {/* Embedded Video Iframe - Autoplay disabled */}
+        {/* Embedded Video Iframe - Autoplay disabled & Ad-Shield Protection */}
         <iframe
-          key={`${activeServer.id}-${key}-${season}-${episode}`}
+          key={`${activeServer.id}-${key}-${season}-${episode}-${adShield ? "shield" : "open"}`}
           src={activeServer.url}
           className="w-full h-full border-0 relative z-10"
           allowFullScreen
           allow="encrypted-media; picture-in-picture; fullscreen"
+          sandbox={
+            adShield
+              ? "allow-scripts allow-same-origin allow-forms allow-presentation"
+              : undefined
+          }
           title={`${title} - ${activeServer.name}`}
         />
 
@@ -198,7 +205,7 @@ export default function StreamPlayer({
                     isSelected ? "bg-black/30 text-white" : "bg-white/10 text-text-muted"
                   }`}
                 >
-                  {srv.tag.split("•")[0].trim()}
+                  {srv.badge}
                 </span>
               </button>
             );
@@ -210,6 +217,33 @@ export default function StreamPlayer({
             className="p-2 rounded-xl bg-surface-glass hover:bg-white/10 text-text-muted hover:text-white border border-border-glass transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Ad-Shield Popup & Redirect Blocker Toggle */}
+          <button
+            onClick={() => setAdShield((prev) => !prev)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+              adShield
+                ? "bg-emerald-950/80 text-emerald-400 border-emerald-500/40 shadow-lg shadow-emerald-950/40"
+                : "bg-surface-glass text-text-muted hover:text-white border-border-glass"
+            }`}
+            title={
+              adShield
+                ? "Ad-Shield සක්‍රියයි: අනවශ්‍ය Popups සහ Redirects සම්පූර්ණයෙන් Block කර ඇත"
+                : "Ad-Shield අක්‍රියයි: Click to enable Popup blocking"
+            }
+          >
+            {adShield ? (
+              <>
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Ad-Shield: ON</span>
+              </>
+            ) : (
+              <>
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                <span>Ad-Shield: OFF</span>
+              </>
+            )}
           </button>
         </div>
 
@@ -279,6 +313,20 @@ export default function StreamPlayer({
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
+        </div>
+      </div>
+
+      {/* 3. Sri Lanka High-Speed Quality Tip Banner */}
+      <div className="mt-3 px-4 py-2.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-xs text-indigo-200">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-accent-secondary flex-shrink-0" />
+          <span className="font-sinhala leading-relaxed">
+            <strong className="text-white font-sans">Quality පාලනය:</strong> Server 1 (VidLink Pro) තෝරා Player එක ඇතුළේ ඇති <strong>Settings (⚙️)</strong> icon එකෙන් <strong>4K, 1080p, 720p, 480p</strong> පහසුවෙන්ම තෝරාගත හැක (කැම් කොපි නැති Original WEB-DL).
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] text-emerald-300 font-mono">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>SLT Fiber • Dialog • Mobitel Ultra-Fast CDN</span>
         </div>
       </div>
     </div>

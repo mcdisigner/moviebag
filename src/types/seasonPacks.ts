@@ -8,8 +8,9 @@ export interface TorrentStream {
     filename?: string;
   };
   // Parsed / enriched attributes
-  quality?: string; // "4K", "1080p", "720p"
-  codec?: string;   // "x265", "x264", "HEVC"
+  quality?: string; // "4K UHD", "1080p FHD", "720p HD", "480p SD"
+  source?: string;  // "BluRay", "WEB-DL", "WEBRip", "HDRip", "CAM-Rip"
+  codec?: string;   // "x265 HEVC", "x264", "AV1"
   size?: string;    // "12.4 GB"
   seeders?: number;
   isSeasonPack?: boolean;

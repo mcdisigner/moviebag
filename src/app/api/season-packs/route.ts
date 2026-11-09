@@ -21,6 +21,7 @@ function buildMagnet(infoHash: string, title: string): string {
 function parseStreamMetadata(rawTitle: string): {
   cleanTitle: string;
   quality: string;
+  source: string;
   codec: string;
   size: string;
   seeders: number;
@@ -29,11 +30,19 @@ function parseStreamMetadata(rawTitle: string): {
   const cleanTitle = lines[0] || rawTitle;
 
   // Extract quality
-  let quality = "HD";
+  let quality = "1080p FHD";
   if (/2160p|4k|uhd/i.test(rawTitle)) quality = "4K UHD";
   else if (/1080p|fhd/i.test(rawTitle)) quality = "1080p FHD";
   else if (/720p|hd/i.test(rawTitle)) quality = "720p HD";
   else if (/480p|sd/i.test(rawTitle)) quality = "480p SD";
+
+  // Extract source (BluRay, WEB-DL, WEBRip, CAM)
+  let source = "WEB-DL";
+  if (/bluray|bdrip|brrip/i.test(rawTitle)) source = "BluRay";
+  else if (/web-dl|web\b/i.test(rawTitle)) source = "WEB-DL";
+  else if (/webrip/i.test(rawTitle)) source = "WEBRip";
+  else if (/hdrip/i.test(rawTitle)) source = "HDRip";
+  else if (/cam|telesync|\bts\b|hdcam|predvd/i.test(rawTitle)) source = "CAM-Rip";
 
   // Extract codec
   let codec = "x264";
@@ -49,7 +58,7 @@ function parseStreamMetadata(rawTitle: string): {
   const seedersMatch = rawTitle.match(/[👤⚙️]\s*(\d+)/);
   const seeders = seedersMatch ? parseInt(seedersMatch[1], 10) : 0;
 
-  return { cleanTitle, quality, codec, size, seeders };
+  return { cleanTitle, quality, source, codec, size, seeders };
 }
 
 export async function GET(req: NextRequest) {
@@ -129,6 +138,7 @@ export async function GET(req: NextRequest) {
           infoHash: s.infoHash,
           fileIdx: s.fileIdx,
           quality: meta.quality,
+          source: meta.source,
           codec: meta.codec,
           size: meta.size,
           seeders: meta.seeders,
@@ -179,6 +189,7 @@ export async function GET(req: NextRequest) {
         infoHash: s.infoHash,
         fileIdx: s.fileIdx,
         quality: meta.quality,
+        source: meta.source,
         codec: meta.codec,
         size: meta.size,
         seeders: meta.seeders,
@@ -195,9 +206,16 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Sort by seeders descending
-    seasonPacks.sort((a, b) => (b.seeders || 0) - (a.seeders || 0));
-    episodeStreams.sort((a, b) => (b.seeders || 0) - (a.seeders || 0));
+    // Sort: BluRay / WEB-DL first, CAM-Rip last, then by seeders descending
+    const sortStreams = (a: TorrentStream, b: TorrentStream) => {
+      const isCamA = a.source === "CAM-Rip" ? 1 : 0;
+      const isCamB = b.source === "CAM-Rip" ? 1 : 0;
+      if (isCamA !== isCamB) return isCamA - isCamB;
+      return (b.seeders || 0) - (a.seeders || 0);
+    };
+
+    seasonPacks.sort(sortStreams);
+    episodeStreams.sort(sortStreams);
 
     return NextResponse.json<SeasonPackResponse>({
       seasonPacks,

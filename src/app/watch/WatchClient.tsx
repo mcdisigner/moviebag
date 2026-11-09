@@ -272,11 +272,11 @@ export default function WatchClient({
           <div className="flex items-center md:flex-col gap-2.5 flex-shrink-0">
             <button
               onClick={handleOpenSeasonPacks}
-              className="flex items-center justify-center gap-2 w-full bg-surface-glass hover:bg-surface-glass-hover text-white border border-border-glass hover:border-white/20 font-semibold px-5 py-3 rounded-xl transition-all shadow-md text-xs sm:text-sm"
+              className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-accent-primary to-indigo-600 hover:from-accent-primary-hover hover:to-indigo-500 text-white font-semibold px-5 py-3 rounded-xl transition-all shadow-lg shadow-accent-primary/25 text-xs sm:text-sm"
             >
-              <DownloadCloud className="w-4 h-4 text-accent-secondary" />
+              <DownloadCloud className="w-4 h-4 text-white" />
               <span>
-                {mediaType === "tv" ? `Season ${season} Pack Magnets` : "Magnet Downloads"}
+                {mediaType === "tv" ? `Season ${season} Packs (4K / 1080p)` : "Download (4K / 1080p / 720p)"}
               </span>
             </button>
 
