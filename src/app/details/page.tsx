@@ -12,6 +12,8 @@ interface DetailsPageProps {
   };
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function DetailsPage({ searchParams }: DetailsPageProps) {
   const mediaType = searchParams.type === "tv" ? "tv" : "movie";
   const id = searchParams.id || "1399";

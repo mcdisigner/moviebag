@@ -5,6 +5,7 @@ import SeasonPackModal from "@/components/season/SeasonPackModal";
 import { getPopularTv, getAnime, getTvByGenre } from "@/lib/tmdb";
 import { Tv, Tag, X } from "lucide-react";
 
+export const dynamic = "force-dynamic";
 export const revalidate = 3600;
 
 interface TvSeriesPageProps {

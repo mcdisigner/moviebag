@@ -65,6 +65,8 @@ export default function FloatingSubtitleOverlay({
     realTime: 0,
     mediaTime: 0,
   });
+  const currentTimeRef = useRef(currentTime);
+  currentTimeRef.current = currentTime;
 
   // When media / subtitle track changes, reset timer to 00:00 and keep paused
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function FloatingSubtitleOverlay({
 
     lastSyncRef.current = {
       realTime: performance.now(),
-      mediaTime: currentTime,
+      mediaTime: currentTimeRef.current,
     };
 
     const interval = setInterval(() => {
@@ -165,6 +167,8 @@ export default function FloatingSubtitleOverlay({
     }
     setIsPlaying((prev) => !prev);
   };
+  const handleTogglePlayRef = useRef(handleTogglePlay);
+  handleTogglePlayRef.current = handleTogglePlay;
 
   // Spacebar hotkey to toggle Play/Pause subtitle sync
   useEffect(() => {
@@ -178,7 +182,7 @@ export default function FloatingSubtitleOverlay({
       }
       if (e.code === "Space") {
         e.preventDefault();
-        handleTogglePlay();
+        handleTogglePlayRef.current();
       } else if (e.key === "[") {
         adjustSubtitleOffset(-0.5);
       } else if (e.key === "]") {

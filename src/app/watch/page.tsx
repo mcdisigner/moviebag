@@ -13,6 +13,8 @@ interface WatchPageProps {
   };
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function WatchPage({ searchParams }: WatchPageProps) {
   const mediaType = searchParams.type === "tv" ? "tv" : "movie";
   const id = searchParams.id || "1399";
