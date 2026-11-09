@@ -201,6 +201,7 @@ export default function WatchClient({
         season={season}
         episode={episode}
         title={title}
+        imdbId={imdbId}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-8">
@@ -279,6 +280,21 @@ export default function WatchClient({
                 {mediaType === "tv" ? `Season ${season} Packs (4K / 1080p)` : "Download (4K / 1080p / 720p)"}
               </span>
             </button>
+
+            {/* Direct Sinhala Subtitle (.srt) Download Button for PotPlayer / VLC */}
+            {imdbId && (
+              <a
+                href={`/api/subtitles?action=download_srt&imdb_id=${imdbId}&type=${mediaType}${
+                  mediaType === "tv" ? `&season_number=${season}&episode_number=${episode}` : ""
+                }`}
+                download
+                className="flex items-center justify-center gap-2 w-full bg-surface-glass hover:bg-white/10 text-indigo-300 hover:text-white border border-indigo-500/30 hover:border-indigo-500/60 font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md text-xs"
+                title="Download Sinhala Subtitle file (.srt) for PotPlayer / VLC / TV"
+              >
+                <Subtitles className="w-4 h-4 text-accent-secondary" />
+                <span>Sinhala Sub (.srt)</span>
+              </a>
+            )}
 
             <button
               onClick={handleWatchlistToggle}

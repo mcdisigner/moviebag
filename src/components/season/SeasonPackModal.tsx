@@ -17,6 +17,7 @@ import {
   Globe,
   ShieldCheck,
   SlidersHorizontal,
+  Subtitles,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { TorrentStream, SeasonPackResponse } from "@/types/seasonPacks";
@@ -265,6 +266,37 @@ export default function SeasonPackModal() {
             </span>
           </div>
         </div>
+
+        {/* Bundled Sinhala Subtitle (.srt) Card for PotPlayer & VLC */}
+        {modalData.imdbId && (
+          <div className="mx-4 sm:mx-5 mt-2.5 p-3 rounded-xl bg-gradient-to-r from-indigo-950/60 to-purple-950/60 border border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 flex-shrink-0">
+                <Subtitles className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-white flex items-center gap-1.5 truncate">
+                  <span>Sinhala Subtitle Track (.srt)</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/30 text-indigo-200">PotPlayer • VLC</span>
+                </h4>
+                <p className="text-[11px] text-text-muted font-sinhala truncate">
+                  Film එක සමඟම එකම Folder එකකට Save කරගන්න. PotPlayer එකෙන් auto play වේ.
+                </p>
+              </div>
+            </div>
+            <a
+              href={`/api/subtitles?action=download_srt&imdb_id=${modalData.imdbId}&type=${
+                modalData.mediaType === "tv" ? "tv" : "movie"
+              }${modalData.mediaType === "tv" ? `&season_number=${selectedSeason}&episode_number=1` : ""}`}
+              download
+              className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all flex-shrink-0"
+              title="Download Sinhala Subtitle file (.srt)"
+            >
+              <DownloadCloud className="w-3.5 h-3.5" />
+              <span>Download Sinhala .SRT</span>
+            </a>
+          </div>
+        )}
 
         {/* Torrent Streams List */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-3 flex-1">

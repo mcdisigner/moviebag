@@ -1,9 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import JSZip from "jszip";
-import { parseSRT } from "@/lib/subtitleParser";
+import { parseSRT, cuesToVTT } from "@/lib/subtitleParser";
 
 const SUBDL_API_KEY =
   process.env.SUBDL_API_KEY || "subdl_-_WTN_WEKOok8UTOeT_mbELKJ71AfT3pSO8asLolel8";
+
+async function extractSrtFromZipUrl(zipUrl: string): Promise<{ filename: string; text: string } | null> {
+  try {
+    const fullDownloadUrl = zipUrl.startsWith("http")
+      ? zipUrl
+      : `https://dl.subdl.com${zipUrl}`;
+
+    const res = await fetch(fullDownloadUrl, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    });
+
+    if (!res.ok) return null;
+
+    const arrayBuffer = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+
+    for (const [filename, file] of Object.entries(zip.files)) {
+      if (!file.dir && (filename.endsWith(".srt") || filename.endsWith(".vtt"))) {
+        const text = await file.async("text");
+        return { filename, text };
+      }
+    }
+  } catch (err) {
+    console.error("extractSrtFromZipUrl error:", err);
+  }
+  return null;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -12,62 +42,138 @@ export async function GET(req: NextRequest) {
   const seasonNumber = searchParams.get("season_number");
   const episodeNumber = searchParams.get("episode_number");
   const languages = searchParams.get("languages") || "si,en";
-  const action = searchParams.get("action") || "auto"; // "auto", "search", "download_cues"
+  const action = searchParams.get("action") || "auto"; // "auto", "search", "download_cues", "vtt", "download_srt"
   const targetUrl = searchParams.get("url");
 
-  // Handler for direct zip download and extraction to cues
-  if (action === "download_cues" && targetUrl) {
-    try {
-      const fullDownloadUrl = targetUrl.startsWith("http")
-        ? targetUrl
-        : `https://dl.subdl.com${targetUrl}`;
+  // Handler for WebVTT output (For native player embed injection like VidLink)
+  if (action === "vtt") {
+    let srtData: { filename: string; text: string } | null = null;
 
-      const res = await fetch(fullDownloadUrl, {
+    if (targetUrl) {
+      srtData = await extractSrtFromZipUrl(targetUrl);
+    } else if (imdbId) {
+      try {
+        const subdlUrl = new URL("https://api.subdl.com/api/v1/subtitles");
+        subdlUrl.searchParams.set("api_key", SUBDL_API_KEY);
+        subdlUrl.searchParams.set("imdb_id", imdbId);
+        subdlUrl.searchParams.set("type", type);
+        subdlUrl.searchParams.set("languages", "si,en");
+        if (seasonNumber) subdlUrl.searchParams.set("season_number", seasonNumber);
+        if (episodeNumber) subdlUrl.searchParams.set("episode_number", episodeNumber);
+
+        const subdlRes = await fetch(subdlUrl.toString(), { next: { revalidate: 3600 } });
+        if (subdlRes.ok) {
+          const data = await subdlRes.json();
+          const subs = data.subtitles || [];
+          const siSub =
+            subs.find(
+              (s: any) =>
+                (s.lang || s.language) === "si" ||
+                s.name?.toLowerCase().includes("sinhala")
+            ) || subs[0];
+
+          if (siSub && siSub.url) {
+            srtData = await extractSrtFromZipUrl(siSub.url);
+          }
+        }
+      } catch (e) {
+        console.warn("VTT subdl search error:", e);
+      }
+    }
+
+    if (srtData) {
+      const cues = parseSRT(srtData.text);
+      const vttContent = cuesToVTT(cues);
+      return new NextResponse(vttContent, {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Content-Type": "text/vtt; charset=utf-8",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "public, max-age=86400",
         },
       });
+    }
 
-      if (!res.ok) {
-        throw new Error(`Failed to download subtitle zip: ${res.status}`);
-      }
+    // Default empty WebVTT
+    return new NextResponse("WEBVTT\n\n", {
+      headers: {
+        "Content-Type": "text/vtt; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  }
 
-      const arrayBuffer = await res.arrayBuffer();
-      const zip = await JSZip.loadAsync(arrayBuffer);
-      
-      // Find all srt or vtt files in the zip
-      let chosenSrtContent = "";
-      let chosenFileName = "";
+  // Handler for direct .SRT file download (For PotPlayer, VLC, TV, Mobile)
+  if (action === "download_srt") {
+    let srtData: { filename: string; text: string } | null = null;
 
-      for (const [filename, file] of Object.entries(zip.files)) {
-        if (!file.dir && (filename.endsWith(".srt") || filename.endsWith(".vtt"))) {
-          chosenFileName = filename;
-          chosenSrtContent = await file.async("text");
-          break; // Take the first matching subtitle
+    if (targetUrl) {
+      srtData = await extractSrtFromZipUrl(targetUrl);
+    } else if (imdbId) {
+      try {
+        const subdlUrl = new URL("https://api.subdl.com/api/v1/subtitles");
+        subdlUrl.searchParams.set("api_key", SUBDL_API_KEY);
+        subdlUrl.searchParams.set("imdb_id", imdbId);
+        subdlUrl.searchParams.set("type", type);
+        subdlUrl.searchParams.set("languages", "si,en");
+        if (seasonNumber) subdlUrl.searchParams.set("season_number", seasonNumber);
+        if (episodeNumber) subdlUrl.searchParams.set("episode_number", episodeNumber);
+
+        const subdlRes = await fetch(subdlUrl.toString(), { next: { revalidate: 3600 } });
+        if (subdlRes.ok) {
+          const data = await subdlRes.json();
+          const subs = data.subtitles || [];
+          const siSub =
+            subs.find(
+              (s: any) =>
+                (s.lang || s.language) === "si" ||
+                s.name?.toLowerCase().includes("sinhala")
+            ) || subs[0];
+
+          if (siSub && siSub.url) {
+            srtData = await extractSrtFromZipUrl(siSub.url);
+          }
         }
+      } catch (e) {
+        console.warn("download_srt subdl search error:", e);
       }
+    }
 
-      if (!chosenSrtContent) {
-        return NextResponse.json(
-          { error: "No .srt or .vtt file found inside zip" },
-          { status: 404 }
-        );
-      }
+    if (srtData) {
+      const safeFilename = srtData.filename.endsWith(".srt")
+        ? srtData.filename
+        : `${srtData.filename}.srt`;
 
-      const cues = parseSRT(chosenSrtContent);
-      return NextResponse.json({
-        success: true,
-        filename: chosenFileName,
-        cues,
+      return new NextResponse(srtData.text, {
+        headers: {
+          "Content-Type": "application/x-subrip; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${encodeURIComponent(safeFilename)}"`,
+          "Access-Control-Allow-Origin": "*",
+        },
       });
-    } catch (err: any) {
-      console.error("SubDL extraction error:", err);
+    }
+
+    return NextResponse.json(
+      { error: "Sinhala subtitle not found for this title" },
+      { status: 404 }
+    );
+  }
+
+  // Handler for direct zip download and extraction to JSON cues
+  if (action === "download_cues" && targetUrl) {
+    const srtData = await extractSrtFromZipUrl(targetUrl);
+    if (!srtData) {
       return NextResponse.json(
-        { error: err.message || "Failed to extract subtitle" },
-        { status: 500 }
+        { error: "No .srt or .vtt file found inside zip" },
+        { status: 404 }
       );
     }
+
+    const cues = parseSRT(srtData.text);
+    return NextResponse.json({
+      success: true,
+      filename: srtData.filename,
+      cues,
+    });
   }
 
   // Search subtitles on SubDL API

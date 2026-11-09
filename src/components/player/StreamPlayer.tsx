@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   Sparkles,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import FloatingSubtitleOverlay from "@/components/subtitles/FloatingSubtitleOverlay";
@@ -24,6 +25,7 @@ interface StreamPlayerProps {
   season?: number;
   episode?: number;
   title: string;
+  imdbId?: string;
 }
 
 export default function StreamPlayer({
@@ -32,12 +34,14 @@ export default function StreamPlayer({
   season = 1,
   episode = 1,
   title,
+  imdbId,
 }: StreamPlayerProps) {
   const { preferredServer, setPreferredServer, saveContinueWatching } = useAppStore();
 
   const [currentServer, setCurrentServer] = useState<number>(preferredServer || 1);
   const [copied, setCopied] = useState<boolean>(false);
   const [isTheater, setIsTheater] = useState<boolean>(false);
+  const [showPlayerHelp, setShowPlayerHelp] = useState<boolean>(false);
   const [adShield, setAdShield] = useState<boolean>(true); // Blocks 99% popups & redirects
   const [key, setKey] = useState<number>(0); // reload key
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,16 +61,27 @@ export default function StreamPlayer({
   }, [tmdbId, mediaType, season, episode, title, saveContinueWatching]);
 
   // Construct URLs for each server (Prioritizing clean, high-bitrate WEB-DL/Blu-Ray providers)
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const subVttUrl = imdbId
+    ? `${origin}/api/subtitles?action=vtt&imdb_id=${imdbId}&type=${mediaType}${
+        mediaType === "tv" ? `&season_number=${season}&episode_number=${episode}` : ""
+      }`
+    : "";
+
   const servers = [
     {
       id: 1,
       name: "VidLink Pro",
-      tag: "⭐ 4K/1080p/720p Quality • No Ads (Best for SL)",
+      tag: "⭐ 4K/1080p Quality • No Ads • Auto Sinhala Sub",
       badge: "Quality ⚙️",
       url:
         mediaType === "movie"
-          ? `https://vidlink.pro/movie/${tmdbId}?primaryColor=6366f1&autoplay=false`
-          : `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}?primaryColor=6366f1&autoplay=false`,
+          ? `https://vidlink.pro/movie/${tmdbId}?primaryColor=6366f1&autoplay=false${
+              subVttUrl ? `&sub_file=${encodeURIComponent(subVttUrl)}&sub_label=Sinhala` : ""
+            }`
+          : `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}?primaryColor=6366f1&autoplay=false${
+              subVttUrl ? `&sub_file=${encodeURIComponent(subVttUrl)}&sub_label=Sinhala` : ""
+            }`,
     },
     {
       id: 2,
@@ -247,27 +262,17 @@ export default function StreamPlayer({
           </button>
         </div>
 
-        {/* External Player Handshakes & Quick Actions */}
+        {/* Player Actions & Help */}
         <div className="flex items-center flex-wrap gap-2 text-xs">
-          {/* PotPlayer 1-Click Launcher */}
-          <a
-            href={`potplayer://${activeServer.url}`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-glass hover:bg-white/10 border border-border-glass text-text-secondary hover:text-white transition-all font-medium"
-            title="Open in PotPlayer desktop application"
+          {/* PotPlayer & VLC Help Button */}
+          <button
+            onClick={() => setShowPlayerHelp(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-500/30 text-indigo-300 hover:text-white transition-all font-medium"
+            title="PotPlayer & VLC මගින් උපසිරැසි සමඟ බලන ආකාරය"
           >
-            <MonitorPlay className="w-3.5 h-3.5 text-amber-400" />
-            <span>PotPlayer</span>
-          </a>
-
-          {/* VLC 1-Click Launcher */}
-          <a
-            href={`vlc://${activeServer.url}`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-glass hover:bg-white/10 border border-border-glass text-text-secondary hover:text-white transition-all font-medium"
-            title="Open in VLC desktop application"
-          >
-            <Zap className="w-3.5 h-3.5 text-orange-400" />
-            <span>VLC Player</span>
-          </a>
+            <MonitorPlay className="w-3.5 h-3.5 text-accent-secondary" />
+            <span>PotPlayer & VLC Tips</span>
+          </button>
 
           {/* Copy URL */}
           <button
@@ -329,6 +334,47 @@ export default function StreamPlayer({
           <span>SLT Fiber • Dialog • Mobitel Ultra-Fast CDN</span>
         </div>
       </div>
+
+      {/* PotPlayer & VLC Subtitle Guide Modal */}
+      {showPlayerHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="absolute inset-0" onClick={() => setShowPlayerHelp(false)} />
+          <div className="relative w-full max-w-md bg-[#0e101c] border border-border-glass rounded-2xl p-5 shadow-2xl z-10 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2 text-white font-bold text-sm">
+                <MonitorPlay className="w-4 h-4 text-accent-secondary" />
+                <span>PotPlayer & VLC උපදෙස්</span>
+              </div>
+              <button
+                onClick={() => setShowPlayerHelp(false)}
+                className="p-1 rounded-lg hover:bg-white/10 text-text-muted hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3 text-xs text-text-secondary font-sinhala leading-relaxed">
+              <p className="text-white font-medium">
+                PotPlayer හෝ VLC මගින් චිත්‍රපටය සිංහල උපසිරැසි සමඟ නරඹන්නේ කෙසේද?
+              </p>
+              <div className="space-y-2 p-3.5 rounded-xl bg-white/5 border border-white/10 text-slate-200">
+                <p>1. පහත <strong>Download (4K/1080p/720p)</strong> වෙතින් Film එක බාගන්න.</p>
+                <p>2. <strong>Download Sinhala Subtitle (.srt)</strong> වෙතින් සිංහල Subtitle එක බාගන්න.</p>
+                <p>3. ෆයිල් දෙකම <strong>එකම Folder එකකට</strong> Save කරන්න (දෙකටම එකම නම දෙන්න).</p>
+                <p>4. දැන් Film එක PotPlayer හෝ VLC එකෙන් Open කරන්න. <strong>Sinhala Subtitle එක Automatically පෙන්වයි!</strong></p>
+              </div>
+              <p className="text-[11px] text-amber-300">
+                ⚠️ සටහන: Online Embed links කෙලින්ම PotPlayer එකෙන් open කළ නොහැක (Server Error එන්නේ ඒ නිසාය). බාගත කළ පසු PotPlayer එකේ ඉතාමත් සුමටව ක්‍රියාත්මක වේ.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowPlayerHelp(false)}
+              className="w-full py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary-hover text-white text-xs font-semibold shadow-md transition-all"
+            >
+              තේරුම් ගත්තා (Got it)
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

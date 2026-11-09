@@ -40,7 +40,7 @@ export default function FloatingSubtitleOverlay({
   // 1. Initial State: Timer strictly paused at 00:00 by default (Autoplay disabled)
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [showControls, setShowControls] = useState<boolean>(true);
+  const [showControls, setShowControls] = useState<boolean>(false); // Collapsed by default so mobile screen is 100% visible
   const [isOverlayVisible, setIsOverlayVisible] = useState<boolean>(true);
   const [activeCue, setActiveCue] = useState<SubtitleCue | null>(null);
   const [secondaryCue, setSecondaryCue] = useState<SubtitleCue | null>(null);
