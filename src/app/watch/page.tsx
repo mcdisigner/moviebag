@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getMovieDetails, getTvDetails, getExternalIds, getImageUrl } from "@/lib/tmdb";
+import { getMovieDetails, getTvDetails, getExternalIds, getImageUrl, getMovieCollection } from "@/lib/tmdb";
 import { MediaItem } from "@/types/tmdb";
 import WatchClient from "./WatchClient";
 
@@ -57,6 +57,11 @@ export default async function WatchPage({ searchParams }: WatchPageProps) {
       getExternalIds(id, mediaType),
     ]);
 
+    let collection = null;
+    if (mediaType === "movie" && media?.belongs_to_collection?.id) {
+      collection = await getMovieCollection(media.belongs_to_collection.id);
+    }
+
     if (!media || !media.id) {
       notFound();
     }
@@ -74,6 +79,7 @@ export default async function WatchPage({ searchParams }: WatchPageProps) {
         initialSeason={season}
         initialEpisode={episode}
         imdbId={imdbId}
+        collection={collection}
       />
     );
   } catch (err) {

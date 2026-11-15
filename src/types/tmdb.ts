@@ -1,3 +1,12 @@
+export interface MovieCollection {
+  id: number;
+  name: string;
+  overview?: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  parts: MediaItem[];
+}
+
 export interface MediaItem {
   id: number;
   title?: string;
@@ -22,8 +31,20 @@ export interface MediaItem {
   tagline?: string;
   status?: string;
   imdb_id?: string;
+  belongs_to_collection?: {
+    id: number;
+    name: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+  } | null;
   external_ids?: {
     imdb_id?: string;
+  belongs_to_collection?: {
+    id: number;
+    name: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+  } | null;
     tvdb_id?: number;
   };
   credits?: {

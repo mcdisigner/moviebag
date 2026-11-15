@@ -1,4 +1,4 @@
-import { MediaItem, Season } from "@/types/tmdb";
+import { MediaItem, Season, MovieCollection } from "@/types/tmdb";
 
 const TMDB_API_KEY =
   process.env.NEXT_PUBLIC_TMDB_API_KEY || "930ad4a1965f9d84446cdb78e49c310d";
@@ -223,5 +223,33 @@ export async function getExternalIds(
     return data;
   } catch {
     return {};
+  }
+}
+
+// Movie Collections & Franchises (e.g., Harry Potter, MCU, Fast & Furious)
+export async function getMovieCollection(
+  collectionId: number | string
+): Promise<MovieCollection | null> {
+  if (!collectionId) return null;
+  try {
+    const data = await fetchFromTMDB<MovieCollection>(
+      `/collection/${collectionId}`,
+      {},
+      86400 // Cache for 24 hours
+    );
+    if (data && data.parts) {
+      // Sort parts in chronological order by release date
+      data.parts = data.parts
+        .map((p) => ({ ...p, media_type: "movie" as const }))
+        .sort((a, b) => {
+          const timeA = a.release_date ? new Date(a.release_date).getTime() : 0;
+          const timeB = b.release_date ? new Date(b.release_date).getTime() : 0;
+          return timeA - timeB;
+        });
+    }
+    return data;
+  } catch (err) {
+    console.warn(`Failed to fetch movie collection ${collectionId}:`, err);
+    return null;
   }
 }

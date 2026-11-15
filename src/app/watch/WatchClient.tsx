@@ -16,7 +16,8 @@ import SeasonEpisodeExplorer from "@/components/season/SeasonEpisodeExplorer";
 import SeasonPackModal from "@/components/season/SeasonPackModal";
 import ZipDropzone from "@/components/subtitles/ZipDropzone";
 import MediaCard from "@/components/home/MediaCard";
-import { MediaItem } from "@/types/tmdb";
+import { MediaItem, MovieCollection } from "@/types/tmdb";
+import MovieCollectionTimeline from "@/components/movie/MovieCollectionTimeline";
 import { SubDLSubtitleItem, SubtitleTrack } from "@/types/subtitles";
 import { useAppStore } from "@/lib/store";
 
@@ -26,6 +27,7 @@ interface WatchClientProps {
   initialSeason: number;
   initialEpisode: number;
   imdbId?: string;
+  collection?: MovieCollection | null;
 }
 
 export default function WatchClient({
@@ -34,6 +36,7 @@ export default function WatchClient({
   initialSeason,
   initialEpisode,
   imdbId,
+  collection,
 }: WatchClientProps) {
   const router = useRouter();
   const [season, setSeason] = useState<number>(initialSeason);
@@ -413,6 +416,14 @@ export default function WatchClient({
             onSeasonChange={(newSeason) => setSeason(newSeason)}
             imdbId={imdbId}
             seriesTitle={title}
+          />
+        )}
+
+        {/* 4b. Franchise & Collection Watch Order Timeline (If Movie belongs to a collection) */}
+        {mediaType === "movie" && collection && (
+          <MovieCollectionTimeline
+            collection={collection}
+            currentMovieId={media.id}
           />
         )}
 

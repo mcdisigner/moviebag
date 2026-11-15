@@ -3,7 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Play, Star, Users, DownloadCloud } from "lucide-react";
-import { getMovieDetails, getTvDetails, getImageUrl, getExternalIds } from "@/lib/tmdb";
+import { getMovieDetails, getTvDetails, getImageUrl, getExternalIds, getMovieCollection } from "@/lib/tmdb";
+import MovieCollectionTimeline from "@/components/movie/MovieCollectionTimeline";
 import SeasonPackModal from "@/components/season/SeasonPackModal";
 import DetailsActionButtons from "./DetailsActionButtons";
 
@@ -50,6 +51,11 @@ export default async function DetailsPage({ searchParams }: DetailsPageProps) {
     mediaType === "tv" ? getTvDetails(id) : getMovieDetails(id),
     getExternalIds(id, mediaType),
   ]);
+
+  let collection = null;
+  if (mediaType === "movie" && media?.belongs_to_collection?.id) {
+    collection = await getMovieCollection(media.belongs_to_collection.id);
+  }
 
   if (!media) notFound();
 
@@ -138,6 +144,13 @@ export default async function DetailsPage({ searchParams }: DetailsPageProps) {
             />
           </div>
         </div>
+
+        {/* Franchise / Collection Watch Order Timeline */}
+        {collection && (
+          <div className="mt-10">
+            <MovieCollectionTimeline collection={collection} currentMovieId={media.id} />
+          </div>
+        )}
 
         {/* Cast List */}
         {media.credits?.cast && media.credits.cast.length > 0 && (
