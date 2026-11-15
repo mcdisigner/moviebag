@@ -22,5 +22,5 @@ export interface SubtitleTrack {
   label: string;
   language: "si" | "en" | string;
   cues: SubtitleCue[];
-  source: "subdl" | "file" | "zip";
+  source: "subdl" | "file" | "zip" | "ai-translated";
 }

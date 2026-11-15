@@ -117,3 +117,29 @@ export function cuesToVTT(cues: SubtitleCue[]): string {
   }
   return vtt;
 }
+
+export function formatSRTTime(seconds: number): string {
+  const absSec = Math.max(0, seconds);
+  const hrs = Math.floor(absSec / 3600);
+  const mins = Math.floor((absSec % 3600) / 60);
+  const secs = Math.floor(absSec % 60);
+  const ms = Math.floor(((absSec % 1) * 1000) % 1000);
+
+  const hh = hrs.toString().padStart(2, "0");
+  const mm = mins.toString().padStart(2, "0");
+  const ss = secs.toString().padStart(2, "0");
+  const mmm = ms.toString().padStart(3, "0");
+
+  return `${hh}:${mm}:${ss},${mmm}`;
+}
+
+export function cuesToSRT(cues: SubtitleCue[]): string {
+  let srt = "";
+  for (let i = 0; i < cues.length; i++) {
+    const cue = cues[i];
+    const startStr = formatSRTTime(cue.start);
+    const endStr = formatSRTTime(cue.end);
+    srt += `${i + 1}\n${startStr} --> ${endStr}\n${cue.text}\n\n`;
+  }
+  return srt;
+}

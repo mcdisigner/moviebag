@@ -16,9 +16,11 @@ import {
   SlidersHorizontal,
   X,
   AlertTriangle,
+  Headphones,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import FloatingSubtitleOverlay from "@/components/subtitles/FloatingSubtitleOverlay";
+import AudioDubbingManager from "./AudioDubbingManager";
 
 interface StreamPlayerProps {
   tmdbId: number;
@@ -52,6 +54,7 @@ export default function StreamPlayer({
   const [copied, setCopied] = useState<boolean>(false);
   const [isTheater, setIsTheater] = useState<boolean>(false);
   const [showPlayerHelp, setShowPlayerHelp] = useState<boolean>(false);
+  const [showAudioDubbing, setShowAudioDubbing] = useState<boolean>(false);
   // Intercept unauthorized popup/redirect attempts from embed scripts
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -269,6 +272,20 @@ export default function StreamPlayer({
 
         {/* Player Actions & Help */}
         <div className="flex items-center flex-wrap gap-2 text-xs">
+          {/* Audio & Dubbing Toggle Button */}
+          <button
+            onClick={() => setShowAudioDubbing(!showAudioDubbing)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all font-medium ${
+              showAudioDubbing
+                ? "bg-accent-primary text-white border-accent-primary shadow-lg shadow-accent-primary/20"
+                : "bg-surface-glass hover:bg-white/10 text-indigo-300 hover:text-white border-border-glass"
+            }`}
+            title="Audio Tracks, Multi-Language Dubbing & Custom Audio Sync"
+          >
+            <Headphones className="w-3.5 h-3.5 text-accent-secondary" />
+            <span>Audio & Dubbing (හඬකැවීම්)</span>
+          </button>
+
           {/* PotPlayer & VLC Help Button */}
           <button
             onClick={() => setShowPlayerHelp(true)}
@@ -325,6 +342,16 @@ export default function StreamPlayer({
           </button>
         </div>
       </div>
+
+      {/* Audio & Dubbing Manager Panel */}
+      {showAudioDubbing && (
+        <div className="mt-3 animate-fade-in">
+          <AudioDubbingManager
+            currentServer={currentServer}
+            onServerChange={handleServerChange}
+          />
+        </div>
+      )}
 
       {/* 3. Sri Lanka High-Speed Quality Tip Banner */}
       <div className="mt-3 px-4 py-2.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-xs text-indigo-200">

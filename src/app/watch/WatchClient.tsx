@@ -20,6 +20,7 @@ import { MediaItem, MovieCollection } from "@/types/tmdb";
 import MovieCollectionTimeline from "@/components/movie/MovieCollectionTimeline";
 import { SubDLSubtitleItem, SubtitleTrack } from "@/types/subtitles";
 import { useAppStore } from "@/lib/store";
+import AiSubtitleTranslatorModal from "@/components/subtitles/AiSubtitleTranslatorModal";
 
 interface WatchClientProps {
   media: MediaItem;
@@ -43,6 +44,7 @@ export default function WatchClient({
   const [episode, setEpisode] = useState<number>(initialEpisode);
   const [availableSubs, setAvailableSubs] = useState<SubDLSubtitleItem[]>([]);
   const [subLoading, setSubLoading] = useState<boolean>(true);
+  const [aiModalOpen, setAiModalOpen] = useState<boolean>(false);
 
   const {
     watchlist,
@@ -336,6 +338,16 @@ export default function WatchClient({
               අන්තර්ජාලයෙන් ස්වයංක්‍රීයව සොයාගත් සිංහල සහ ඉංග්‍රීසි උපසිරැසි
             </p>
 
+            {/* AI Auto-Translate Action Button */}
+            <button
+              type="button"
+              onClick={() => setAiModalOpen(true)}
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-accent-primary to-indigo-600 hover:from-accent-primary-hover hover:to-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md shadow-accent-primary/20 transition-all"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-accent-gold animate-pulse" />
+              <span>✨ AI Auto-Translate Subtitles</span>
+            </button>
+
             {subLoading ? (
               <div className="py-8 text-center text-text-muted">
                 <div className="w-6 h-6 border-2 border-accent-secondary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
@@ -450,6 +462,16 @@ export default function WatchClient({
 
       {/* Global Season Pack Modal */}
       <SeasonPackModal />
+
+      {/* AI Subtitle Auto-Translator Modal */}
+      <AiSubtitleTranslatorModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        availableSubs={availableSubs}
+        currentActiveTrack={activeSubtitleTrack}
+        onTranslatedTrackLoaded={(track) => setActiveSubtitleTrack(track)}
+        mediaTitle={title}
+      />
     </div>
   );
 }
