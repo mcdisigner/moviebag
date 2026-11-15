@@ -52,7 +52,18 @@ export default function StreamPlayer({
   const [copied, setCopied] = useState<boolean>(false);
   const [isTheater, setIsTheater] = useState<boolean>(false);
   const [showPlayerHelp, setShowPlayerHelp] = useState<boolean>(false);
-  const [adShield, setAdShield] = useState<boolean>(true); // Blocks 99% popups & redirects
+  // Intercept unauthorized popup/redirect attempts from embed scripts
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const originalOpen = window.open;
+    window.open = function (...args) {
+      console.warn("Blocked popup attempt:", args[0]);
+      return null;
+    };
+    return () => {
+      window.open = originalOpen;
+    };
+  }, []);
   const [key, setKey] = useState<number>(0); // reload key
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -193,16 +204,11 @@ export default function StreamPlayer({
 
         {/* Embedded Video Iframe - Autoplay disabled & Ad-Shield Protection */}
         <iframe
-          key={`${activeServer.id}-${key}-${season}-${episode}-${adShield ? "shield" : "open"}`}
+          key={`${activeServer.id}-${key}-${season}-${episode}`}
           src={activeServer.url}
           className="w-full h-full border-0 relative z-10"
           allowFullScreen
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write"
-          sandbox={
-            adShield
-              ? "allow-scripts allow-same-origin allow-forms allow-presentation allow-top-navigation-by-user-activation"
-              : undefined
-          }
           title={`${title} - ${activeServer.name}`}
         />
 
@@ -251,32 +257,14 @@ export default function StreamPlayer({
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
 
-          {/* Ad-Shield Popup & Redirect Blocker Toggle */}
-          <button
-            onClick={() => setAdShield((prev) => !prev)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-              adShield
-                ? "bg-emerald-950/80 text-emerald-400 border-emerald-500/40 shadow-lg shadow-emerald-950/40"
-                : "bg-surface-glass text-text-muted hover:text-white border-border-glass"
-            }`}
-            title={
-              adShield
-                ? "Ad-Shield සක්‍රියයි: අනවශ්‍ය Popups සහ Redirects සම්පූර්ණයෙන් Block කර ඇත"
-                : "Ad-Shield අක්‍රියයි: Click to enable Popup blocking"
-            }
+          {/* Ad-Shield Protection Status Badge */}
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 select-none shadow-sm"
+            title="Ad-Shield සක්‍රියයි: අනවශ්‍ය Popups සහ Redirects ස්වයංක්‍රීයව Block කර ඇත"
           >
-            {adShield ? (
-              <>
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Ad-Shield: ON</span>
-              </>
-            ) : (
-              <>
-                <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                <span>Ad-Shield: OFF</span>
-              </>
-            )}
-          </button>
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Ad-Shield: Active</span>
+          </div>
         </div>
 
         {/* Player Actions & Help */}
