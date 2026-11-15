@@ -75,14 +75,40 @@ export async function GET(req: NextRequest) {
   const seasonNum = parseInt(seasonParam, 10) || 1;
   const episodeNum = parseInt(episodeParam, 10) || 1;
 
-  if (!imdbIdRaw) {
-    return NextResponse.json(
-      { error: "imdb_id parameter is required" },
-      { status: 400 }
-    );
+  const TMDB_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY || "930ad4a1965f9d84446cdb78e49c310d";
+  const tmdbIdParam = searchParams.get("tmdb_id");
+
+  let effectiveImdbId = imdbIdRaw;
+
+  // If imdb_id is missing or incomplete, resolve it via TMDB external_ids
+  if ((!effectiveImdbId || !effectiveImdbId.startsWith("tt")) && tmdbIdParam) {
+    try {
+      const tmdbType = type === "movie" ? "movie" : "tv";
+      const extRes = await fetch(
+        `https://api.themoviedb.org/3/${tmdbType}/${tmdbIdParam}/external_ids?api_key=${TMDB_KEY}`,
+        { next: { revalidate: 86400 } }
+      );
+      if (extRes.ok) {
+        const extData = await extRes.json();
+        if (extData.imdb_id) {
+          effectiveImdbId = extData.imdb_id;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to resolve imdb_id from tmdb_id:", e);
+    }
   }
 
-  const cleanImdbId = imdbIdRaw.startsWith("tt") ? imdbIdRaw : `tt${imdbIdRaw}`;
+  if (!effectiveImdbId) {
+    return NextResponse.json<SeasonPackResponse>({
+      seasonPacks: [],
+      episodeStreams: [],
+      totalPacks: 0,
+      totalEpisodes: 0,
+    });
+  }
+
+  const cleanImdbId = effectiveImdbId.startsWith("tt") ? effectiveImdbId : `tt${effectiveImdbId}`;
 
   try {
     let torrentioUrl = "";

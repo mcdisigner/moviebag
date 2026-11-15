@@ -96,6 +96,7 @@ export default function SeasonEpisodeExplorer({
   const handleDownloadCompleteSeason = () => {
     setSeasonPackModalData({
       imdbId: imdbId || "",
+      tmdbId: tvId,
       title: `${seriesTitle} (Season ${selectedSeason})`,
       season: selectedSeason,
       totalSeasons,
@@ -106,6 +107,7 @@ export default function SeasonEpisodeExplorer({
   const handleOpenEpisodeDownload = (epNum: number) => {
     setSeasonPackModalData({
       imdbId: imdbId || "",
+      tmdbId: tvId,
       title: `${seriesTitle} S${selectedSeason.toString().padStart(2, "0")}E${epNum
         .toString()
         .padStart(2, "0")}`,

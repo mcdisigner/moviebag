@@ -93,11 +93,26 @@ export function parseSRT(srtContent: string): SubtitleCue[] {
 /**
  * Converts SubtitleCue array to standard WebVTT string
  */
+export function formatVTTTime(seconds: number): string {
+  const absSec = Math.max(0, seconds);
+  const hrs = Math.floor(absSec / 3600);
+  const mins = Math.floor((absSec % 3600) / 60);
+  const secs = Math.floor(absSec % 60);
+  const ms = Math.floor(((absSec % 1) * 1000) % 1000);
+
+  const hh = hrs.toString().padStart(2, "0");
+  const mm = mins.toString().padStart(2, "0");
+  const ss = secs.toString().padStart(2, "0");
+  const mmm = ms.toString().padStart(3, "0");
+
+  return `${hh}:${mm}:${ss}.${mmm}`;
+}
+
 export function cuesToVTT(cues: SubtitleCue[]): string {
   let vtt = "WEBVTT\n\n";
   for (const cue of cues) {
-    const startStr = formatSecondsToTime(cue.start) + ".000";
-    const endStr = formatSecondsToTime(cue.end) + ".000";
+    const startStr = formatVTTTime(cue.start);
+    const endStr = formatVTTTime(cue.end);
     vtt += `${cue.id}\n${startStr} --> ${endStr}\n${cue.text}\n\n`;
   }
   return vtt;

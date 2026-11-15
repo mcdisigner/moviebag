@@ -45,7 +45,7 @@ export default function SeasonPackModal() {
 
   // Fetch season packs dynamically using selectedSeason
   useEffect(() => {
-    if (!modalData?.imdbId) {
+    if (!modalData?.imdbId && !modalData?.tmdbId) {
       setSeasonPacks([]);
       setEpisodeStreams([]);
       setLoading(false);
@@ -60,7 +60,14 @@ export default function SeasonPackModal() {
         const type = modalData?.mediaType === "movie" ? "movie" : "series";
         const seasonNumber = modalData?.mediaType === "tv" ? selectedSeason : 1;
         const res = await fetch(
-          `/api/season-packs?imdb_id=${modalData?.imdbId}&type=${type}&season_number=${seasonNumber}&season=${seasonNumber}&episode=1`
+          `/api/season-packs?${new URLSearchParams({
+          type,
+          season_number: String(seasonNumber),
+          season: String(seasonNumber),
+          episode: "1",
+          ...(modalData?.imdbId ? { imdb_id: modalData.imdbId } : {}),
+          ...(modalData?.tmdbId ? { tmdb_id: String(modalData.tmdbId) } : {}),
+        }).toString()}`
         );
         if (res.ok && active) {
           const data: SeasonPackResponse = await res.json();

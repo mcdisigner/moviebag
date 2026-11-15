@@ -58,6 +58,7 @@ export default function HeroBanner({ item: initialItem, pool }: HeroBannerProps)
     const imdbId = item.external_ids?.imdb_id || item.imdb_id || "";
     setSeasonPackModalData({
       imdbId,
+      tmdbId: item.id,
       title,
       season: 1,
       totalSeasons: item.number_of_seasons || 1,

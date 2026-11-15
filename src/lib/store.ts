@@ -68,6 +68,7 @@ interface AppState {
 
   seasonPackModalData: {
     imdbId: string;
+    tmdbId?: number;
     title: string;
     season: number;
     totalSeasons?: number;
@@ -76,6 +77,7 @@ interface AppState {
   setSeasonPackModalData: (
     data: {
       imdbId: string;
+      tmdbId?: number;
       title: string;
       season: number;
       totalSeasons?: number;

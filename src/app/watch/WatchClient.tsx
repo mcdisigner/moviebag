@@ -137,6 +137,7 @@ export default function WatchClient({
   const handleOpenSeasonPacks = () => {
     setSeasonPackModalData({
       imdbId: imdbId || "",
+      tmdbId: media.id,
       title:
         mediaType === "tv"
           ? `${title} (Season ${season})`
@@ -202,6 +203,7 @@ export default function WatchClient({
         episode={episode}
         title={title}
         imdbId={imdbId}
+        releaseDate={media.release_date || media.first_air_date}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-8">

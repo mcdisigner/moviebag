@@ -26,9 +26,14 @@ export default function Navbar() {
   const continueWatching = useAppStore((state) => state.continueWatching);
 
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [genresOpen, setGenresOpen] = useState(false);
   const [genreTab, setGenreTab] = useState<"movie" | "tv">("movie");
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -84,13 +89,13 @@ export default function Navbar() {
       label: "Watchlist",
       href: "/watchlist",
       icon: Bookmark,
-      badge: watchlist.length > 0 ? watchlist.length : null,
+      badge: mounted && watchlist.length > 0 ? watchlist.length : null,
     },
     {
       label: "Continue",
       href: "/continue-watching",
       icon: History,
-      badge: continueWatching.length > 0 ? continueWatching.length : null,
+      badge: mounted && continueWatching.length > 0 ? continueWatching.length : null,
     },
   ];
 

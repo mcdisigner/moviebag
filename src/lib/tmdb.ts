@@ -79,8 +79,8 @@ export async function getTrendingAll(): Promise<MediaItem[]> {
   return data.results || [];
 }
 
-export async function getTrendingMovies(): Promise<MediaItem[]> {
-  const data = await fetchFromTMDB<{ results: MediaItem[] }>("/trending/movie/day");
+export async function getTrendingMovies(page = 1): Promise<MediaItem[]> {
+  const data = await fetchFromTMDB<{ results: MediaItem[] }>("/trending/movie/day", { page });
   return (data.results || []).map((item) => ({ ...item, media_type: "movie" }));
 }
 
@@ -90,8 +90,8 @@ export async function getNowPlayingMovies(): Promise<MediaItem[]> {
 }
 
 // 2. TV Series endpoints
-export async function getPopularTv(): Promise<MediaItem[]> {
-  const data = await fetchFromTMDB<{ results: MediaItem[] }>("/tv/popular");
+export async function getPopularTv(page = 1): Promise<MediaItem[]> {
+  const data = await fetchFromTMDB<{ results: MediaItem[] }>("/tv/popular", { page });
   return (data.results || []).map((item) => ({ ...item, media_type: "tv" }));
 }
 
@@ -148,18 +148,20 @@ export async function getAnime(): Promise<MediaItem[]> {
 }
 
 // Filter Movies or TV by specific Genre
-export async function getMoviesByGenre(genreId: string | number): Promise<MediaItem[]> {
+export async function getMoviesByGenre(genreId: string | number, page = 1): Promise<MediaItem[]> {
   const data = await fetchFromTMDB<{ results: MediaItem[] }>("/discover/movie", {
     with_genres: String(genreId),
     sort_by: "popularity.desc",
+    page,
   });
   return (data.results || []).map((item) => ({ ...item, media_type: "movie" }));
 }
 
-export async function getTvByGenre(genreId: string | number): Promise<MediaItem[]> {
+export async function getTvByGenre(genreId: string | number, page = 1): Promise<MediaItem[]> {
   const data = await fetchFromTMDB<{ results: MediaItem[] }>("/discover/tv", {
     with_genres: String(genreId),
     sort_by: "popularity.desc",
+    page,
   });
   return (data.results || []).map((item) => ({ ...item, media_type: "tv" }));
 }

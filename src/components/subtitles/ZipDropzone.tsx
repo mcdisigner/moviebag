@@ -12,6 +12,26 @@ interface ZipDropzoneProps {
   compact?: boolean;
 }
 
+// Helper to decode subtitle text across UTF-8, UTF-16, and Windows-1252 (ANSI)
+function decodeSubtitleBuffer(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  // UTF-16 LE BOM
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return new TextDecoder("utf-16le").decode(buffer);
+  }
+  // UTF-16 BE BOM
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return new TextDecoder("utf-16be").decode(buffer);
+  }
+  // Try UTF-8 first
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+  } catch {
+    // Fallback to windows-1252 for older Sinhala legacy/ANSI files
+    return new TextDecoder("windows-1252").decode(buffer);
+  }
+}
+
 export default function ZipDropzone({ onLoadedTrack, compact = false }: ZipDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -39,7 +59,8 @@ export default function ZipDropzone({ onLoadedTrack, compact = false }: ZipDropz
             (relativePath.toLowerCase().endsWith(".srt") ||
               relativePath.toLowerCase().endsWith(".vtt"))
           ) {
-            const content = await zipEntry.async("text");
+            const buf = await zipEntry.async("arraybuffer");
+            const content = decodeSubtitleBuffer(buf);
             srtList.push({
               name: relativePath,
               content,
@@ -61,7 +82,8 @@ export default function ZipDropzone({ onLoadedTrack, compact = false }: ZipDropz
         file.name.toLowerCase().endsWith(".vtt")
       ) {
         // Direct SRT or VTT file
-        const text = await file.text();
+        const buf = await file.arrayBuffer();
+        const text = decodeSubtitleBuffer(buf);
         selectSubtitleFile(file.name, text);
       } else {
         setErrorMsg("Please upload a .zip subtitle pack, or a .srt / .vtt file.");

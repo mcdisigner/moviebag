@@ -15,6 +15,7 @@ import {
   Sparkles,
   SlidersHorizontal,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import FloatingSubtitleOverlay from "@/components/subtitles/FloatingSubtitleOverlay";
@@ -26,6 +27,7 @@ interface StreamPlayerProps {
   episode?: number;
   title: string;
   imdbId?: string;
+  releaseDate?: string;
 }
 
 export default function StreamPlayer({
@@ -35,7 +37,15 @@ export default function StreamPlayer({
   episode = 1,
   title,
   imdbId,
+  releaseDate,
 }: StreamPlayerProps) {
+  const isLikelyCam = React.useMemo(() => {
+    if (mediaType !== "movie" || !releaseDate) return false;
+    const releaseTime = new Date(releaseDate).getTime();
+    if (isNaN(releaseTime)) return false;
+    const daysSince = (Date.now() - releaseTime) / (1000 * 60 * 60 * 24);
+    return daysSince < 50;
+  }, [mediaType, releaseDate]);
   const { preferredServer, setPreferredServer, saveContinueWatching } = useAppStore();
 
   const [currentServer, setCurrentServer] = useState<number>(preferredServer || 1);
@@ -60,9 +70,16 @@ export default function StreamPlayer({
     });
   }, [tmdbId, mediaType, season, episode, title, saveContinueWatching]);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Construct URLs for each server (Prioritizing clean, high-bitrate WEB-DL/Blu-Ray providers)
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const subVttUrl = imdbId
+  const origin = (mounted && typeof window !== "undefined" ? window.location.origin : "") || process.env.NEXT_PUBLIC_APP_URL || "";
+  // Only pass sub_file if origin is public HTTPS (avoids mixed content & unreachable localhost)
+  const isPublicHttps = origin.startsWith("https://") && !origin.includes("localhost") && !origin.includes("127.0.0.1");
+  const subVttUrl = imdbId && isPublicHttps
     ? `${origin}/api/subtitles?action=vtt&imdb_id=${imdbId}&type=${mediaType}${
         mediaType === "tv" ? `&season_number=${season}&episode_number=${episode}` : ""
       }`
@@ -85,13 +102,13 @@ export default function StreamPlayer({
     },
     {
       id: 2,
-      name: "AutoEmbed HD",
-      tag: "Clean WEB-DL • Fast Buffering",
-      badge: "1080p Pure",
+      name: "VidBinge (Zero Ads)",
+      tag: "100% Ad-Free Open Source • Clean Stream",
+      badge: "No Ads ✨",
       url:
         mediaType === "movie"
-          ? `https://player.autoembed.cc/embed/movie/${tmdbId}?autoplay=0`
-          : `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}?autoplay=0`,
+          ? `https://vidbinge.dev/embed/movie/${tmdbId}`
+          : `https://vidbinge.dev/embed/tv/${tmdbId}/${season}/${episode}`,
     },
     {
       id: 3,
@@ -105,33 +122,33 @@ export default function StreamPlayer({
     },
     {
       id: 4,
-      name: "SmashyStream",
-      tag: "Multi-HQ Mirror • Multi-Audio",
-      badge: "Multi-Audio",
+      name: "AutoEmbed HD",
+      tag: "Clean WEB-DL • Fast Buffering",
+      badge: "1080p Pure",
       url:
         mediaType === "movie"
-          ? `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&autoPlay=false`
-          : `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=${season}&episode=${episode}&autoPlay=false`,
+          ? `https://player.autoembed.cc/embed/movie/${tmdbId}?autoplay=0`
+          : `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}?autoplay=0`,
     },
     {
       id: 5,
-      name: "VidSrc Pro",
-      tag: "High-Speed Mirror • 1080p",
-      badge: "1080p",
+      name: "Vidsrc.cc",
+      tag: "High-Speed Cloud Mirror • Multi-Source",
+      badge: "Mirror 1",
       url:
         mediaType === "movie"
-          ? `https://vidsrc.pro/embed/movie/${tmdbId}?autoPlay=false`
-          : `https://vidsrc.pro/embed/tv/${tmdbId}/${season}/${episode}?autoPlay=false`,
+          ? `https://vidsrc.cc/v2/embed/movie/${tmdbId}?autoPlay=false`
+          : `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}?autoPlay=false`,
     },
     {
       id: 6,
-      name: "SuperEmbed",
-      tag: "Reliable Multi-Host • Low Data",
-      badge: "Reliable",
+      name: "2Embed",
+      tag: "Direct Stable CDN • High Compatibility",
+      badge: "Backup",
       url:
         mediaType === "movie"
-          ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&autoplay=0`
-          : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}&autoplay=0`,
+          ? `https://www.2embed.cc/embed/${tmdbId}`
+          : `https://www.2embed.cc/embedtv/${tmdbId}&s=${season}&e=${episode}`,
     },
   ];
 
@@ -180,10 +197,10 @@ export default function StreamPlayer({
           src={activeServer.url}
           className="w-full h-full border-0 relative z-10"
           allowFullScreen
-          allow="encrypted-media; picture-in-picture; fullscreen"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write"
           sandbox={
             adShield
-              ? "allow-scripts allow-same-origin allow-forms allow-presentation"
+              ? "allow-scripts allow-same-origin allow-forms allow-presentation allow-top-navigation-by-user-activation"
               : undefined
           }
           title={`${title} - ${activeServer.name}`}

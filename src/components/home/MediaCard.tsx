@@ -22,6 +22,14 @@ export default function MediaCard({ item }: MediaCardProps) {
   const releaseYear = (item.release_date || item.first_air_date || "").slice(0, 4);
   const rating = item.vote_average ? item.vote_average.toFixed(1) : "NR";
   const posterUrl = getImageUrl(item.poster_path, "w500");
+  const isLikelyCam = React.useMemo(() => {
+    const dateStr = item.release_date || item.first_air_date;
+    if (mediaType !== "movie" || !dateStr) return false;
+    const releaseTime = new Date(dateStr).getTime();
+    if (isNaN(releaseTime)) return false;
+    const daysSince = (Date.now() - releaseTime) / (1000 * 60 * 60 * 24);
+    return daysSince < 50;
+  }, [mediaType, item.release_date, item.first_air_date]);
 
   const handleWatchlist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -69,6 +77,19 @@ export default function MediaCard({ item }: MediaCardProps) {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
+
+          {/* Quality Indicator (CAM vs 1080p) top-left */}
+          <div className="absolute top-2.5 left-2.5 z-10">
+            {isLikelyCam ? (
+              <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500 text-black shadow-lg shadow-amber-500/30">
+                CAM
+              </span>
+            ) : (
+              <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
+                1080p
+              </span>
+            )}
+          </div>
 
           {/* Rating Badge top-right */}
           <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10 text-xs font-semibold text-accent-gold shadow-md">

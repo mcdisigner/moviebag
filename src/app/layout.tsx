@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SearchModal from "@/components/search/SearchModal";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -45,8 +46,9 @@ export default function RootLayout({
         className={`${outfit.variable} ${notoSansSinhala.variable} bg-background-primary text-text-primary min-h-screen flex flex-col font-sans selection:bg-accent-primary selection:text-white`}
       >
         <Navbar />
-        <main className="flex-1 w-full relative">{children}</main>
+        <main className="flex-1 w-full relative pb-16 md:pb-0">{children}</main>
         <Footer />
+        <MobileBottomNav />
         <SearchModal />
       </body>
     </html>
